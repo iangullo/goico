@@ -1,0 +1,75 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          <%= app_name %>
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $network $local_fs $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: <%= description %>
+### END INIT INFO
+
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+NAME=<%= app_name %>
+DAEMON=<%= daemon %>
+DAEMON_ARGS="<%= daemon_args %>"
+PIDFILE=<%= pidfile %>
+USER=<%= user %>
+GROUP=<%= group %>
+SCRIPTNAME=/etc/init.d/$NAME
+APP_DIR=<%= working_directory %>
+
+[ -x "$DAEMON" ] || exit 0
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+. /lib/init/vars.sh
+. /lib/lsb/init-functions
+
+do_start() {
+    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON \
+        --chuid $USER:$GROUP --chdir $APP_DIR --test > /dev/null \
+        || return 1
+    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON \
+        --chuid $USER:$GROUP --chdir $APP_DIR --background --make-pidfile -- \
+        $DAEMON_ARGS \
+        || return 2
+}
+
+do_stop() {
+    start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
+    RETVAL="$?"
+    [ "$RETVAL" = 2 ] && return 2
+    start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+    [ "$?" = 2 ] && return 2
+    rm -f $PIDFILE
+    return "$RETVAL"
+}
+
+case "$1" in
+  start)  [ "$VERBOSE" != no ] && log_daemon_msg "Starting $NAME" "$NAME"
+          do_start
+          case "$?" in
+              0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+              2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+          esac ;;
+  stop)   [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $NAME" "$NAME"
+          do_stop
+          case "$?" in
+              0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+              2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+          esac ;;
+  restart|force-reload) log_daemon_msg "Restarting $NAME" "$NAME"
+          do_stop
+          case "$?" in
+            0|1) do_start
+                 case "$?" in
+                     0) log_end_msg 0 ;;
+                     1) log_end_msg 1 ;;
+                     *) log_end_msg 1 ;;
+                 esac ;;
+            *)   log_end_msg 1 ;;
+          esac ;;
+  status) status_of_proc -p $PIDFILE "$DAEMON" "$NAME" && exit 0 || exit $? ;;
+  *)      echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+          exit 3 ;;
+esac
+:

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string><%= identifier %></string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string><%= command %></string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>WorkingDirectory</key>
+    <string><%= working_directory %></string>
+
+    <key>StandardOutPath</key>
+    <string><%= log_path %>/launchd.log</string>
+
+    <key>StandardErrorPath</key>
+    <string><%= log_path %>/launchd.error.log</string>
+
+    <key>UserName</key>
+    <string><%= user %></string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>RAILS_ENV</key>
+        <string>production</string>
+        <key>SECRET_KEY_BASE</key>
+        <string><%= secret_key_base %></string>
+        <key>DATABASE_URL</key>
+        <string><%= database_url %></string>
+    </dict>
+</dict>
+</plist>

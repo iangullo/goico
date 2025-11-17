@@ -1,0 +1,118 @@
+en:
+  cli:
+    banner: "Usage: goico [OPTIONS] [APP_PATH]"
+    version: "Goico version %{version}"
+    starting_verbose: "Starting Goico packaging process:"
+    app_path: "Application path"
+    package_type: "Package type"
+    webserver: "Webserver"
+    init_system: "Init system"
+    locale: "Locale"
+    auto_detect: "auto-detect"
+    success: "✅ Package successfully created: %{path}"
+    error: "❌ Error: %{message}"
+    interrupted: "Operation interrupted by user"
+    unexpected_error: "💥 An unexpected error occurred"
+    backtrace: "Backtrace"
+    invalid_option: "Invalid option: %{option}"
+    missing_argument: "Missing argument for option: %{option}"
+
+    options:
+      type:
+        description: "Package type"
+        values: "deb, rpm, brew, tar"
+      version:
+        description: "Package version"
+      app_name:
+        description: "Application name"
+      webserver:
+        description: "Webserver type"
+        values: "nginx, apache, standalone"
+      init_system:
+        description: "Init system"
+        values: "systemd, initd, launchd"
+      domain:
+        description: "Domain name for webserver config"
+      user:
+        description: "Service user account"
+      ssl:
+        description: "Include SSL configuration"
+      rbenv:
+        description: "Use rbenv for Ruby management"
+      locale:
+        description: "Set language"
+        values: "en, es, fr"
+      help:
+        description: "Show this help message"
+      version_flag:
+        description: "Show version information"
+
+    examples:
+      header: "Examples:"
+      deb: "  goico -t deb /path/to/rails/app        # Create Debian package"
+      rpm: "  goico -t rpm --webserver nginx        # Create RPM with nginx"
+      brew: "  goico -t brew --domain myapp.com      # Create Homebrew formula"
+      tar: "  goico -t tar --ssl                    # Create tar archive with SSL"
+      custom: "  goico -l es -t deb -w standalone     # Spanish, Debian, standalone server"
+
+  errors:
+    missing_app: "Application not found at: %{path}"
+    invalid_package_type: "Invalid package type: %{type}. Valid options: %{valid}"
+    invalid_webserver: "Invalid webserver: %{server}. Valid options: %{valid}"
+    invalid_init_system: "Invalid init system: %{system}. Valid options: %{valid}"
+
+  goico:
+    # General
+    starting: "🚂 Goico preparing the Talgo train for journey..."
+    success: "✅ Journey completed successfully!"
+    version: "Goico version %{version}"
+
+    # Detection phase
+    detecting_features: "🔍 Detecting application features..."
+    app_name: "Application: %{name}"
+    database: "Database: %{type}"
+    javascript: "JavaScript: %{framework}"
+    ruby_version: "Ruby: %{version}"
+    webserver: "Webserver: %{server}"
+
+    # Packaging
+    building_package: "📦 Building %{type} package..."
+    package_created: "Package created: %{path}"
+    building_deb_package: "Building DEB package..."
+    building_rpm_package: "Building RPM package..."
+    building_brew_formula: "Building Homebrew formula..."
+    built_brew_formula: "Homebrew formula built: %{path}"
+    building_tar_package: "Building TAR package..."
+    built_tar_package: "TAR package built: %{path}"
+
+    # Application setup
+    installing_gems: "Installing Ruby gems..."
+    setup_importmap: "Setting up Importmap..."
+    setup_nodejs: "Setting up Node.js..."
+    setup_webpack: "Setting up Webpack..."
+    precompiling_assets: "Precompiling assets..."
+    pinning_javascript: "Pinning JavaScript packages..."
+    setup_database: "Setting up database..."
+    copying_application_files: "Copying application files..."
+    generating_configurations: "Generating configurations..."
+
+    # Generators
+    generating_systemd: "Generating systemd service file..."
+    generated_systemd: "Systemd service file generated: %{path}"
+    generating_initd: "Generating init.d service script..."
+    generated_initd: "init.d service script generated: %{path}"
+    generating_launchd: "Generating launchd plist..."
+    generated_launchd: "Launchd plist generated: %{path}"
+    generating_webserver: "Generating %{server} configuration..."
+    generated_webserver: "%{server} configuration generated: %{path}"
+    generating_ssl: "Generating SSL configuration..."
+    generated_ssl: "SSL configuration generated"
+    ssl_missing_domain: "⚠️ SSL requested but no domain provided. SSL setup skipped."
+    skipping_puma: "Puma configuration already exists, skipping..."
+
+    # Packagers
+    packagers:
+      deb: "Debian package"
+      rpm: "RPM package"
+      brew: "Homebrew formula"
+      tar: "TAR archive"

@@ -1,0 +1,32 @@
+[Unit]
+Description=<%= description %>
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=<%= user %>
+Group=<%= group %>
+WorkingDirectory=<%= working_directory %>
+Environment=RAILS_ENV=production
+Environment=SECRET_KEY_BASE=<%= secret_key_base %>
+Environment=DATABASE_URL=<%= database_url %>
+ExecStart=<%= exec_start %>
+ExecReload=/bin/kill -USR1 $MAINPID
+Restart=always
+RestartSec=5
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=<%= working_directory %> <%= log_path %> <%= run_path %>
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=<%= app_name %>
+
+[Install]
+WantedBy=multi-user.target

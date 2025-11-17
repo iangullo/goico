@@ -1,0 +1,176 @@
+#!/usr/bin/env ruby
+require "goico"
+require "optparse"
+
+# Set up I18n early so help messages are translated
+Goico::I18n.setup
+
+# Parse command line options with I18n support
+options = {}
+OptionParser.new do |opts|
+  # Set the banner with translation
+  opts.banner = Goico.t("cli.banner")
+
+  # Package type option
+  opts.on("-t", "--type TYPE",
+          Goico.t("cli.options.type.description"),
+          Goico.t("cli.options.type.values")) do |v|
+    options[:type] = v
+  end
+
+  # Version option
+  opts.on("-v", "--version VERSION",
+          Goico.t("cli.options.version.description")) do |v|
+    options[:version] = v
+  end
+
+  # App name option
+  opts.on("-n", "--app-name NAME",
+          Goico.t("cli.options.app_name.description")) do |v|
+    options[:app_name] = v
+  end
+
+  # Webserver option
+  opts.on("-w", "--webserver SERVER",
+          Goico.t("cli.options.webserver.description"),
+          Goico.t("cli.options.webserver.values")) do |v|
+    options[:webserver] = v
+  end
+
+  # Init system option
+  opts.on("-i", "--init-system SYSTEM",
+          Goico.t("cli.options.init_system.description"),
+          Goico.t("cli.options.init_system.values")) do |v|
+    options[:init_system] = v
+  end
+
+  # Domain option
+  opts.on("-d", "--domain DOMAIN",
+          Goico.t("cli.options.domain.description")) do |v|
+    options[:domain] = v
+  end
+
+  # User option
+  opts.on("-u", "--user USER",
+          Goico.t("cli.options.user.description")) do |v|
+    options[:user] = v
+  end
+
+  # SSL option
+  opts.on("-s", "--ssl",
+          Goico.t("cli.options.ssl.description")) do
+    options[:ssl] = true
+  end
+
+  # Rbenv option
+  opts.on("-r", "--rbenv",
+          Goico.t("cli.options.rbenv.description")) do
+    options[:rbenv] = true
+  end
+
+  # Locale option
+  opts.on("-l", "--locale LOCALE",
+          Goico.t("cli.options.locale.description"),
+          Goico.t("cli.options.locale.values")) do |v|
+    Goico.set_locale(v.to_sym)
+  end
+
+  # Help option
+  opts.on("-h", "--help",
+          Goico.t("cli.options.help.description")) do
+    puts opts
+    puts "\n#{Goico.t('cli.examples.header')}"
+    puts Goico.t('cli.examples.deb')
+    puts Goico.t('cli.examples.rpm')
+    puts Goico.t('cli.examples.brew')
+    puts Goico.t('cli.examples.tar')
+    puts Goico.t('cli.examples.custom')
+    exit
+  end
+
+  # Version display
+  opts.on("--version",
+          Goico.t("cli.options.version_flag.description")) do
+    puts Goico.t("cli.version", version: Goico::VERSION)
+    exit
+  end
+end
+
+begin
+  # Parse arguments
+  ARGV.options = opts
+  ARGV.parse!
+
+  # Set locale from environment if not specified via CLI
+  unless ARGV.include?('--locale') || ARGV.include?('-l')
+    Goico::I18n.set_locale
+  end
+
+  # Get app path (first non-option argument)
+  app_path = ARGV[0] || "."
+
+  # Validate app exists
+  unless File.directory?(app_path)
+    raise Goico::Error, Goico.t("errors.missing_app", path: app_path)
+  end
+
+  # Validate package type
+  if options[:type] && !%w[deb rpm brew tar].include?(options[:type])
+    raise Goico::Error, Goico.t("errors.invalid_package_type",
+                               type: options[:type],
+                               valid: "deb, rpm, brew, tar")
+  end
+
+  # Validate webserver type
+  if options[:webserver] && !%w[nginx apache standalone].include?(options[:webserver])
+    raise Goico::Error, Goico.t("errors.invalid_webserver",
+                               server: options[:webserver],
+                               valid: "nginx, apache, standalone")
+  end
+
+  # Validate init system
+  if options[:init_system] && !%w[systemd initv launchd].include?(options[:init_system])
+    raise Goico::Error, Goico.t("errors.invalid_init_system",
+                               system: options[:init_system],
+                               valid: "systemd, initv, launchd")
+  end
+
+  # Show detected configuration
+  if ARGV.include?('--verbose') || ARGV.include?('-V')
+    puts Goico.t("cli.starting_verbose")
+    puts "  #{Goico.t('cli.app_path')}: #{File.expand_path(app_path)}"
+    puts "  #{Goico.t('cli.package_type')}: #{options[:type] || 'deb (default)'}"
+    puts "  #{Goico.t('cli.webserver')}: #{options[:webserver] || Goico.t('cli.auto_detect')}"
+    puts "  #{Goico.t('cli.init_system')}: #{options[:init_system] || Goico.t('cli.auto_detect')}"
+    puts "  #{Goico.t('cli.locale')}: #{Goico::I18n.current_locale}"
+    puts
+  end
+
+  # Execute the packaging
+  result = Goico.travel(app_path, options)
+
+  puts
+  puts Goico.t("cli.success", path: result[:package_path])
+
+rescue OptionParser::InvalidOption => e
+  puts Goico.t("cli.invalid_option", option: e.args.join(' '))
+  puts opts
+  exit 1
+rescue OptionParser::MissingArgument => e
+  puts Goico.t("cli.missing_argument", option: e.args.join(' '))
+  puts opts
+  exit 1
+rescue Goico::Error => e
+  puts Goico.t("cli.error", message: e.message)
+  exit 1
+rescue Interrupt
+  puts
+  puts Goico.t("cli.interrupted")
+  exit 1
+rescue => e
+  puts Goico.t("cli.unexpected_error")
+  puts "  #{e.class}: #{e.message}"
+  puts "  #{Goico.t('cli.backtrace')}:" if ARGV.include?('--verbose')
+  puts e.backtrace if ARGV.include?('--verbose')
+  exit 1
+end
