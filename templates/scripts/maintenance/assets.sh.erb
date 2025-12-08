@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+cd <%= install_path %>
+
+export RAILS_ENV=production
+
+echo "Compiling assets..."
+
+<% if javascript_runtime == :importmap %>
+bundle exec rails assets:precompile
+<% else %>
+# Install JavaScript dependencies
+npm install || yarn install
+
+# Compile assets
+bundle exec rails assets:precompile
+<% end %>
+
+echo "Assets compiled successfully"

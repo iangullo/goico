@@ -1,0 +1,227 @@
+#!/bin/bash
+set -euo pipefail
+
+<%= comment_box "Monitoring Setup Script for #{app_name}" %>
+
+APP_NAME="<%= app_name %>"
+INSTALL_PATH="<%= app_install_path %>"
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log() {
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
+
+info() {
+    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] INFO:${NC} $1"
+}
+
+# Install monitoring dependencies
+install_monitoring_tools() {
+    log "Installing monitoring dependencies..."
+
+    # Check if we're on a Debian-based system
+    if command -v apt-get &> /dev/null; then
+        apt-get update
+        apt-get install -y curl jq bc prometheus-node-exporter
+
+        <% if @analysis[:database] == :postgresql %>
+        apt-get install -y prometheus-postgres-exporter
+        <% elsif @analysis[:database] == :mysql %>
+        apt-get install -y prometheus-mysqld-exporter
+        <% end %>
+
+        <% if @analysis[:infrastructure][:cache_store] == :redis %>
+        apt-get install -y prometheus-redis-exporter
+        <% end %>
+
+    elif command -v yum &> /dev/null; then
+        yum install -y curl jq bc prometheus2-node_exporter
+        # Similar package installation for RHEL-based systems
+    else
+        info "Please install monitoring tools manually for your distribution"
+    fi
+}
+
+# Setup application metrics
+setup_application_metrics() {
+    log "Setting up application metrics..."
+
+    # Create metrics directory
+    local metrics_dir="$INSTALL_PATH/config/monitoring"
+    mkdir -p "$metrics_dir"
+
+    # Create basic health check endpoint
+    cat > "$INSTALL_PATH/config/monitoring/healthcheck.rb" << 'EOF'
+# Health check endpoint for monitoring
+class HealthCheckController < ApplicationController
+  skip_before_action :verify_authenticity_token
+
+  def index
+    checks = {
+      status: 'OK',
+      timestamp: Time.now.utc.iso8601,
+      checks: {
+        database: database_healthy?,
+        redis: redis_healthy?,
+        disk: disk_healthy?
+      }
+    }
+
+    render json: checks
+  end
+
+  private
+
+  def database_healthy?
+    ActiveRecord::Base.connection.execute("SELECT 1")
+    true
+  rescue
+    false
+  end
+
+  def redis_healthy?
+    return true unless defined?(Redis)
+    Redis.current.ping == "PONG"
+  rescue
+    false
+  end
+
+  def disk_healthy?
+    `df / --output=pcent | tail -1`.strip.to_i < 90
+  end
+end
+EOF
+
+    # Add route for health check
+    if [ -f "$INSTALL_PATH/config/routes.rb" ]; then
+        if ! grep -q "healthcheck" "$INSTALL_PATH/config/routes.rb"; then
+            echo "" >> "$INSTALL_PATH/config/routes.rb"
+            echo "# Monitoring routes" >> "$INSTALL_PATH/config/routes.rb"
+            echo "get '/health', to: 'health_check#index'" >> "$INSTALL_PATH/config/routes.rb"
+            echo "get '/metrics', to: 'health_check#metrics' if Rails.env.production?" >> "$INSTALL_PATH/config/routes.rb"
+        fi
+    fi
+}
+
+# Setup Prometheus configuration
+setup_prometheus_config() {
+    log "Setting up Prometheus configuration..."
+
+    local prometheus_dir="<%= config_install_path %>/prometheus"
+    mkdir -p "$prometheus_dir"
+
+    cat > "$prometheus_dir/prometheus.yml" << EOF
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: '$APP_NAME'
+    static_configs:
+      - targets: ['localhost:9394']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+
+  <% if @analysis[:database] == :postgresql %>
+  - job_name: 'postgres_exporter'
+    static_configs:
+      - targets: ['localhost:9187']
+  <% elsif @analysis[:database] == :mysql %>
+  - job_name: 'mysql_exporter'
+    static_configs:
+      - targets: ['localhost:9104']
+  <% end %>
+
+  <% if @analysis[:infrastructure][:cache_store] == :redis %>
+  - job_name: 'redis_exporter'
+    static_configs:
+      - targets: ['localhost:9121']
+  <% end %>
+EOF
+
+    info "Prometheus configuration saved to: $prometheus_dir/prometheus.yml"
+}
+
+# Setup log monitoring
+setup_log_monitoring() {
+    log "Setting up log monitoring..."
+
+    # Create logrotate configuration for application logs
+    cat > "/etc/logrotate.d/$APP_NAME" << EOF
+<%= log_path %>/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+    su <%= user %> <%= group %>
+}
+EOF
+
+    info "Log rotation configured for $APP_NAME"
+}
+
+# Create monitoring dashboard template
+create_dashboard_template() {
+    log "Creating monitoring dashboard template..."
+
+    local dashboard_dir="<%= config_install_path %>/grafana"
+    mkdir -p "$dashboard_dir"
+
+    cat > "$dashboard_dir/dashboard.json" << 'EOF'
+{
+  "dashboard": {
+    "title": "<%= app_name %> Monitoring",
+    "panels": [
+      {
+        "title": "Application Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"<%= app_name %>\"}",
+            "legendFormat": "{{instance}}"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+
+    info "Grafana dashboard template created: $dashboard_dir/dashboard.json"
+}
+
+# Main setup function
+main() {
+    log "Setting up monitoring for $APP_NAME..."
+
+    install_monitoring_tools
+    setup_application_metrics
+    setup_prometheus_config
+    setup_log_monitoring
+    create_dashboard_template
+
+    log "Monitoring setup completed!"
+    info ""
+    info "Next steps:"
+    info "1. Start the monitoring services:"
+    info "   - systemctl start prometheus-node-exporter"
+    <% if @analysis[:database] == :postgresql %>
+    info "   - systemctl start prometheus-postgres-exporter"
+    <% end %>
+    info "2. Access health check: curl http://localhost:<%= @analysis[:infrastructure][:webserver] == :standalone ? 3000 : 80 %>/health"
+    info "3. Configure alerts in your monitoring system"
+}
+
+# Run main function
+main "$@"

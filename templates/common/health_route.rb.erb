@@ -1,0 +1,6 @@
+<%= comment_box "Health check route for #{app_name}" %>
+<%= comment_box "Add this to config/routes.rb" %>
+
+# Health monitoring routes
+get '/health', to: 'health_check#index'
+get '/metrics', to: 'health_check#metrics' if Rails.env.production?

@@ -1,0 +1,75 @@
+#!/bin/bash
+set -euo pipefail
+
+<%= comment_box "Database Backup Script for #{app_name}" %>
+
+APP_NAME="<%= app_name %>"
+BACKUP_DIR="<%= @options[:backup_path] || "/var/backups/#{app_name}" %>/database"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+backup_postgresql() {
+    local backup_file="$BACKUP_DIR/${APP_NAME}_pg_${TIMESTAMP}.sql"
+    log "Backing up PostgreSQL database to: $backup_file"
+
+    pg_dump --verbose --clean --no-owner --no-acl "<%= database %>" > "$backup_file"
+    gzip "$backup_file"
+
+    log "PostgreSQL backup completed: ${backup_file}.gz"
+}
+
+backup_mysql() {
+    local backup_file="$BACKUP_DIR/${APP_NAME}_mysql_${TIMESTAMP}.sql"
+    log "Backing up MySQL database to: $backup_file"
+
+    mysqldump --single-transaction --quick --lock-tables=false \
+        -u <%= username %> \
+        -p"<%= password %>" \
+        <%= database %> > "$backup_file"
+    gzip "$backup_file"
+
+    log "MySQL backup completed: ${backup_file}.gz"
+}
+
+backup_sqlite() {
+    local backup_file="$BACKUP_DIR/${APP_NAME}_sqlite_${TIMESTAMP}.db"
+    local source_db="<%= app_install_path %>/<%= database %>.sqlite3"
+
+    log "Backing up SQLite database to: $backup_file"
+    cp "$source_db" "$backup_file"
+    gzip "$backup_file"
+
+    log "SQLite backup completed: ${backup_file}.gz"
+}
+
+cleanup_old_backups() {
+    log "Cleaning up backups older than 7 days..."
+    find "$BACKUP_DIR" -name "*.gz" -mtime +7 -delete
+}
+
+main() {
+    log "Starting database backup for $APP_NAME"
+
+    mkdir -p "$BACKUP_DIR"
+
+    case "<%= @analysis[:database] %>" in
+        postgresql)
+            backup_postgresql
+            ;;
+        mysql)
+            backup_mysql
+            ;;
+        sqlite)
+            backup_sqlite
+            ;;
+    esac
+
+    cleanup_old_backups
+
+    log "Database backup completed"
+}
+
+main "$@"

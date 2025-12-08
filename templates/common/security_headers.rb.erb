@@ -1,0 +1,16 @@
+# Security headers configuration for <%= app_name %>
+# Add this to config/application.rb or an initializer
+
+Rails.application.config do |config|
+  # Security headers
+  config.action_dispatch.default_headers = {
+    'X-Frame-Options' => 'SAMEORIGIN',
+    'X-XSS-Protection' => '1; mode=block',
+    'X-Content-Type-Options' => 'nosniff',
+    'X-Permitted-Cross-Domain-Policies' => 'none',
+    'Referrer-Policy' => 'strict-origin-when-cross-origin'
+  }
+
+  # SSL/TLS configuration
+  config.force_ssl = true if ENV['RAILS_ENV'] == 'production'
+end

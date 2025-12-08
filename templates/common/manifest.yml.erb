@@ -1,0 +1,44 @@
+# Goico Application Manifest
+# This file describes the application structure and dependencies
+# Generated: <%= Time.now.utc.iso8601 %>
+
+application:
+  name: <%= app_name %>
+  version: <%= @options[:version] || '1.0.0' %>
+  type: rails
+  framework: rails_<%= detect_rails_version %>
+  deployed_at: <%= Time.now.utc.iso8601 %>
+
+paths:
+  install: <%= app_install_path %>
+  config: <%= config_install_path %>
+  logs: <%= log_path %>
+  runtime: <%= run_path %>
+  data: <%= data_path %>
+
+database:
+  type: <%= @analysis[:database] %>
+  adapter: <%= database_config[:adapter] %>
+  url: <%= database_config[:url] %>
+
+infrastructure:
+  webserver: <%= @analysis[:infrastructure][:webserver] %>
+  app_server: <%= @analysis[:infrastructure][:app_server] %>
+  background_processor: <%= @analysis[:infrastructure][:background_processor] %>
+  cache_store: <%= @analysis[:infrastructure][:cache_store] %>
+  ruby_manager: <%= @analysis[:infrastructure][:ruby_manager] %>
+
+dependencies:
+  ruby:
+    version: <%= @analysis[:ruby_version] || '3.0.0' %>
+    manager: <%= @analysis[:infrastructure][:ruby_manager] %>
+  javascript:
+    runtime: <%= @analysis[:javascript][:type] %>
+    needs_node: <%= @analysis[:javascript][:type] != :importmap %>
+  system_packages: <%= all_system_dependencies %>
+
+features:
+  ssl_enabled: <%= should_configure_ssl? %>
+  asset_compilation: <%= needs_asset_compilation? %>
+  background_jobs: <%= @analysis[:infrastructure][:background_processor] != :none %>
+  caching: <%= @analysis[:infrastructure][:cache_store] != :file %>

@@ -1,0 +1,99 @@
+#!/bin/bash
+set -euo pipefail
+
+<%= comment_box "Database Migration Script for #{app_name}" %>
+
+APP_NAME="<%= app_name %>"
+APP_PATH="<%= app_install_path %>"
+RAILS_ENV="production"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+error() {
+    echo "ERROR: $1" >&2
+    exit 1
+}
+
+check_existing_seeds() {
+    local seeds_file="$APP_PATH/db/seeds.rb"
+    if [[ -f "$seeds_file" ]]; then
+        # Check if seeds file has meaningful content (more than just comments/whitespace)
+        if grep -q -v -e '^#' -e '^$' -e '^[[:space:]]*$' "$seeds_file"; then
+            log "Using application's seeds.rb file"
+            return 0
+        else
+            log "seeds.rb file exists but appears empty or commented out"
+            return 1
+        fi
+    else
+        log "No seeds.rb file found"
+        return 1
+    fi
+}
+
+run_migrations() {
+    log "Running database migrations..."
+
+    cd "$APP_PATH"
+
+    # Check if migrations are needed
+    if bundle exec rails db:abort_if_pending_migrations >/dev/null 2>&1; then
+        log "No pending migrations"
+        return 0
+    fi
+
+    # Run migrations
+    if bundle exec rails db:migrate; then
+        log "Migrations completed successfully"
+    else
+        error "Migration failed"
+    fi
+}
+
+seed_database() {
+    log "Seeding database..."
+
+    if check_existing_seeds; then
+        # Use the application's seeds.rb
+        if bundle exec rails db:seed; then
+            log "Database seeded successfully using application seeds"
+        else
+            error "Database seeding failed"
+        fi
+    else
+        log "Skipping seeding - no seeds file or empty seeds file"
+    fi
+}
+
+seed_production_data() {
+    # Only run if explicitly requested and no existing seeds
+    if [[ "<%= @options[:seed_database] %>" == "true" ]] && ! check_existing_seeds; then
+        log "Seeding with production data..."
+        bundle exec rails runner '<%= app_name.camelize %>::ProductionSeeder.seed'
+    fi
+}
+
+check_database_status() {
+    log "Checking database status..."
+
+    if bundle exec rails db:version >/dev/null 2>&1; then
+        log "Database connection: OK"
+    else
+        error "Cannot connect to database"
+    fi
+}
+
+main() {
+    log "Starting database migration for $APP_NAME"
+
+    check_database_status
+    run_migrations
+    seed_database
+    seed_production_data
+
+    log "Database migration process completed"
+}
+
+main "$@"

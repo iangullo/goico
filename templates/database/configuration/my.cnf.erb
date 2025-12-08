@@ -1,0 +1,19 @@
+<%= comment_box "MySQL Tuning for #{app_name}" %>
+
+[mysqld]
+# Basic settings
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+
+# Memory settings
+innodb_buffer_pool_size = 128M
+innodb_log_file_size = 64M
+key_buffer_size = 32M
+
+# Connection settings
+max_connections = 100
+thread_cache_size = 8
+
+# Performance
+query_cache_type = 1
+query_cache_size = 32M

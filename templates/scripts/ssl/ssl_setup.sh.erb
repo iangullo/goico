@@ -1,0 +1,23 @@
+#!/bin/bash
+set -euo pipefail
+
+DOMAIN="<%= domain %>"
+EMAIL="<%= email %>"
+
+<% if use_letsencrypt %>
+echo "Setting up Let's Encrypt SSL certificate for $DOMAIN..."
+
+# Install certbot if not present
+if ! command -v certbot &> /dev/null; then
+  <%= package_manager %> update
+  <%= package_manager %> install -y certbot
+fi
+
+# Get certificate
+certbot certonly --standalone -d "$DOMAIN" --email "$EMAIL" --agree-tos --non-interactive
+
+echo "SSL certificate installed for $DOMAIN"
+<% else %>
+echo "Using existing SSL certificates"
+echo "Please ensure your certificates are placed in <%= config_path %>/ssl/"
+<% end %>

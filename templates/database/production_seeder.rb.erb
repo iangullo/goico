@@ -1,0 +1,40 @@
+<%= comment_box "Production Data Seeder for #{app_name}" %>
+<%= comment_box "Only used if db/seeds.rb doesn't exist or is empty" %>
+
+module <%= app_name.camelize %>
+  class ProductionSeeder
+    def self.seed
+      return unless Rails.env.production?
+
+      Rails.logger.info "Seeding production data for <%= app_name %>..."
+
+      # Only create absolutely essential records
+      create_essential_settings
+
+      Rails.logger.info "Production seeding completed"
+    end
+
+    private
+
+    def self.create_essential_settings
+      # Only create settings that are required for the app to function
+      # This is a minimal fallback - the app should have its own seeds.rb
+
+      if defined?(Setting) && Setting.respond_to?(:find_or_create_by)
+        Setting.find_or_create_by(key: 'app_name') do |setting|
+          setting.value = '<%= app_name %>'
+        end
+
+        Setting.find_or_create_by(key: 'version') do |setting|
+          setting.value = '<%= @options[:version] || "1.0.0" %>'
+        end
+
+        Setting.find_or_create_by(key: 'deployed_at') do |setting|
+          setting.value = Time.current.iso8601
+        end
+      end
+    rescue => e
+      Rails.logger.error "Failed to create essential settings: #{e.message}"
+    end
+  end
+end

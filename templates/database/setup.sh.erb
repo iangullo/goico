@@ -1,0 +1,86 @@
+#!/bin/bash
+set -euo pipefail
+
+<%= comment_box "Database Setup Script for #{app_name}" %>
+
+APP_NAME="<%= app_name %>"
+DB_USER="<%= username %>"
+DB_NAME="<%= database %>"
+DB_PASSWORD="<%= password %>"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+error() {
+    echo "ERROR: $1" >&2
+    exit 1
+}
+
+setup_postgresql() {
+    log "Setting up PostgreSQL database..."
+
+    # Create user if it doesn't exist
+    if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
+        log "Creating PostgreSQL user: $DB_USER"
+        sudo -u postgres createuser --createdb --login --createrole "$DB_USER"
+        sudo -u postgres psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+    fi
+
+    # Create database if it doesn't exist
+    if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+        log "Creating PostgreSQL database: $DB_NAME"
+        sudo -u postgres createdb -O "$DB_USER" "$DB_NAME"
+    fi
+
+    # Grant privileges
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$DB_NAME\" TO \"$DB_USER\";"
+
+    log "PostgreSQL setup completed"
+}
+
+setup_mysql() {
+    log "Setting up MySQL database..."
+
+    # MySQL setup commands
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD:-}" <<EOF
+CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
+GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+
+    log "MySQL setup completed"
+}
+
+setup_sqlite() {
+    log "Setting up SQLite database..."
+    # SQLite doesn't need much setup, just ensure directory exists
+    mkdir -p "$(dirname "<%= app_install_path %>/$DB_NAME")"
+    log "SQLite setup completed"
+}
+
+# Main setup function
+main() {
+    log "Starting database setup for $APP_NAME"
+
+    case "<%= @analysis[:database] %>" in
+        postgresql)
+            setup_postgresql
+            ;;
+        mysql)
+            setup_mysql
+            ;;
+        sqlite)
+            setup_sqlite
+            ;;
+        *)
+            error "Unsupported database type: <%= @analysis[:database] %>"
+            ;;
+    esac
+
+    log "Database setup completed successfully"
+}
+
+# Run main function
+main "$@"

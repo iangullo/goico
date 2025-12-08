@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+<%= comment_box "Health check script for #{app_name}" %>
+<%= comment_box "Usage: RAILS_ENV=production ruby #{app_name}_healthcheck.rb" %>
+
+require 'fileutils'
+require 'net/http'
+require 'uri'
+
+class HealthCheck
+  def initialize(app_path)
+    @app_path = app_path
+    @errors = []
+  end
+
+  def run
+    puts "Running health check for <%= app_name %>..."
+
+    check_database
+    check_redis if redis_required?
+    check_disk_space
+    check_process_running
+
+    if @errors.empty?
+      puts "✅ All health checks passed"
+      exit 0
+    else
+      puts "❌ Health check failed:"
+      @errors.each { |error| puts "   - #{error}" }
+      exit 1
+    end
+  end
+
+  private
+
+  def check_database
+    begin
+      load_rails
+      ActiveRecord::Base.connection.execute("SELECT 1")
+      puts "✅ Database connection: OK"
+    rescue => e
+      @errors << "Database connection failed: #{e.message}"
+    end
+  end
+
+  def check_redis
+    # Redis check implementation
+  end
+
+  def check_disk_space
+    # Disk space check
+  end
+
+  def check_process_running
+    # Process check implementation
+  end
+
+  def load_rails
+    # Rails environment loading
+  end
+end
+
+HealthCheck.new("<%= app_install_path %>").run

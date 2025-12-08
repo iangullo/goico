@@ -1,0 +1,34 @@
+#!/bin/bash
+set -euo pipefail
+
+APP_NAME="<%= app_name %>"
+APP_USER="<%= user || app_name %>"
+INSTALL_PATH="<%= install_path %>"
+
+echo "Configuring <%= app_name %>..."
+
+# Create app user if doesn't exist
+if ! id "<%= app_name %>" &>/dev/null; then
+  useradd -r -s /bin/false -d "$INSTALL_PATH" "$APP_USER"
+fi
+
+# Set ownership
+chown -R "$APP_USER":"$APP_USER" "$INSTALL_PATH"
+
+# Setup log directory
+mkdir -p <%= log_path %>
+chown -R "$APP_USER":"$APP_USER" <%= log_path %>
+
+# Setup run directory
+mkdir -p <%= run_path %>
+chown -R "$APP_USER":"$APP_USER" <%= run_path %>
+
+<% if database_type != :sqlite %>
+echo "Please ensure your database is properly configured"
+echo "Database type: <%= database_type %>"
+<% end %>
+
+<% if ssl_enabled && domain %>
+echo "SSL is configured for domain: <%= domain %>"
+echo "Run the SSL setup script to complete certificate installation"
+<% end %>

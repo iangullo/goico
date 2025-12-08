@@ -1,0 +1,21 @@
+<%= comment_box "PostgreSQL Tuning for #{app_name}" %>
+
+# Memory settings
+shared_buffers = 128MB
+effective_cache_size = 1GB
+work_mem = 4MB
+
+# Checkpoint settings
+checkpoint_completion_target = 0.7
+wal_buffers = 4MB
+
+# Network settings
+listen_addresses = 'localhost'
+max_connections = 100
+
+# Performance settings
+random_page_cost = 1.1
+effective_io_concurrency = 200
+
+# Logging
+log_min_duration_statement = 1000
