@@ -1,0 +1,15 @@
+[Unit]
+Description=<%= manifest["app_name"] %> Rails application (Passenger)
+After=network.target
+
+[Service]
+Type=simple
+User=<%= app_user %>
+Group=<%= app_group %>
+WorkingDirectory=<%= app_path %>
+Environment=RAILS_ENV=production
+ExecStart=/usr/bin/passenger start -p 3000 -d --environment production --pid-file <%= app_path %>/tmp/pids/passenger.pid
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

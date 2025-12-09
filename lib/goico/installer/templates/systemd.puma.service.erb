@@ -1,0 +1,15 @@
+[Unit]
+Description=<%= manifest["app_name"] %> Rails application (Puma)
+After=network.target
+
+[Service]
+Type=simple
+User=<%= app_user %>
+Group=<%= app_group %>
+WorkingDirectory=<%= app_path %>
+Environment=RAILS_ENV=production
+ExecStart=<%= app_path %>/bin/puma -C <%= app_path %>/config/puma.rb
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

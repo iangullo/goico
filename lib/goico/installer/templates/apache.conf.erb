@@ -1,0 +1,19 @@
+<VirtualHost *:80>
+  ServerName <%= domain || "localhost" %>
+  DocumentRoot <%= app_path %>/public
+
+  <% if ssl_enabled? %>
+  SSLEngine on
+  SSLCertificateFile /etc/ssl/certs/<%= domain %>.crt
+  SSLCertificateKeyFile /etc/ssl/private/<%= domain %>.key
+  <% end %>
+
+  <Directory <%= app_path %>/public>
+    Require all granted
+    Options -MultiViews
+  </Directory>
+
+  ProxyPreserveHost On
+  ProxyPass / http://127.0.0.1:3000/
+  ProxyPassReverse / http://127.0.0.1:3000/
+</VirtualHost>

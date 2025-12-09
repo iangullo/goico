@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string><%= manifest["app_name"] %>.puma</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string><%= app_path %>/bin/puma</string>
+      <string>-C</string>
+      <string><%= app_path %>/config/puma.rb</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string><%= app_path %></string>
+    <key>UserName</key>
+    <string><%= app_user %></string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+  </dict>
+</plist>

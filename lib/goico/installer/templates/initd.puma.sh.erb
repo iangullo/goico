@@ -1,0 +1,33 @@
+#!/bin/sh
+# <%= manifest["app_name"] %> Puma init script
+### BEGIN INIT INFO
+# Provides:          <%= manifest["app_name"] %>
+# Required-Start:    $network
+# Required-Stop:     $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Puma Rails application
+### END INIT INFO
+
+APP_PATH="<%= app_path %>"
+USER="<%= app_user %>"
+PID_FILE="$APP_PATH/tmp/pids/puma.pid"
+
+start() {
+  echo "Starting Puma..."
+  start-stop-daemon --start --chuid $USER --background --exec $APP_PATH/bin/puma -- -C $APP_PATH/config/puma.rb
+}
+
+stop() {
+  echo "Stopping Puma..."
+  start-stop-daemon --stop --pidfile $PID_FILE
+}
+
+case "$1" in
+  start) start ;;
+  stop) stop ;;
+  restart) stop; start ;;
+  *) echo "Usage: $0 {start|stop|restart}" ;;
+esac
+
+exit 0

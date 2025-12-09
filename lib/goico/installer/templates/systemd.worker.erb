@@ -1,0 +1,15 @@
+[Unit]
+Description=<%= manifest["app_name"] %> Rails worker
+After=network.target
+
+[Service]
+Type=simple
+User=<%= app_user %>
+Group=<%= app_group %>
+WorkingDirectory=<%= app_path %>
+Environment=RAILS_ENV=production
+ExecStart=<%= app_path %>/bin/rails jobs:work
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,118 @@
+fr:
+  cli:
+    banner: "Utilisation: goico [OPTIONS] [CHEMIN_APP]"
+    version: "Version de Goico %{version}"
+    starting_verbose: "Démarrage du processus de packaging Goico:"
+    app_path: "Chemin de l'application"
+    package_type: "Type de package"
+    webserver: "Serveur web"
+    init_system: "Système d'init"
+    locale: "Langue"
+    auto_detect: "détection automatique"
+    success: "✅ Package créé avec succès: %{path}"
+    error: "❌ Erreur: %{message}"
+    interrupted: "Opération interrompue par l'utilisateur"
+    unexpected_error: "💥 Une erreur inattendue est survenue"
+    backtrace: "Trace"
+    invalid_option: "Option invalide: %{option}"
+    missing_argument: "Argument manquant pour l'option: %{option}"
+
+    options:
+      type:
+        description: "Type de package"
+        values: "deb, rpm, brew, tar"
+      version:
+        description: "Version du package"
+      app_name:
+        description: "Nom de l'application"
+      webserver:
+        description: "Type de serveur web"
+        values: "nginx, apache, standalone"
+      init_system:
+        description: "Système d'init"
+        values: "systemd, initd, launchd"
+      domain:
+        description: "Nom de domaine pour la config du serveur"
+      user:
+        description: "Compte utilisateur du service"
+      ssl:
+        description: "Inclure configuration SSL"
+      rbenv:
+        description: "Utiliser rbenv pour Ruby"
+      locale:
+        description: "Langue"
+        values: "en, es, fr, pt"
+      out:
+        description: "Fichier de sortie pour le manifeste généré"
+      run_seeds:
+        description: "Executer db:seed après la installation"
+      targets:
+        description: "Formats de package à générer"
+      help:
+        description: "Afficher l'aide"
+      version_flag:
+        description: "Afficher la version"
+
+    examples:
+      header: "Exemples:"
+      deb: "  goico -t deb /chemin/rails/app        # Créer un package Debian"
+      rpm: "  goico -t rpm --webserver nginx       # Créer un RPM avec nginx"
+      brew: "  goico -t brew --domain myapp.com    # Créer une formule Homebrew"
+      tar: "  goico -t tar --ssl                   # Créer un fichier tar avec SSL"
+      custom: "  goico -l fr -t deb -w standalone  # Français, Debian, serveur standalone"
+
+  errors:
+    missing_app: "Application introuvable à: %{path}"
+    invalid_package_type: "Type de package invalide: %{type}. Options valides: %{valid}"
+    invalid_webserver: "Serveur web invalide: %{server}. Options valides: %{valid}"
+    invalid_init_system: "Système d'init invalide: %{system}. Options valides: %{valid}"
+
+  goico:
+    starting: "🚂 Goico prépare le train Talgo pour le voyage..."
+    success: "✅ Voyage terminé avec succès!"
+    version: "Version de Goico %{version}"
+
+    detecting_features: "🔍 Détection des fonctionnalités de l'application..."
+    app_name: "Application: %{name}"
+    database: "Base de données: %{type}"
+    javascript: "JavaScript: %{framework}"
+    ruby_version: "Ruby: %{version}"
+    webserver: "Serveur web: %{server}"
+
+    building_package: "📦 Construction du package %{type}..."
+    package_created: "Package créé: %{path}"
+    building_deb_package: "Construction du package DEB..."
+    building_rpm_package: "Construction du package RPM..."
+    building_brew_formula: "Construction de la formule Homebrew..."
+    built_brew_formula: "Formule Homebrew créée: %{path}"
+    building_tar_package: "Construction du package TAR..."
+    built_tar_package: "Fichier TAR créé: %{path}"
+
+    installing_gems: "Installation des gems Ruby..."
+    setup_importmap: "Configuration d'Importmap..."
+    setup_nodejs: "Configuration de Node.js..."
+    setup_webpack: "Configuration de Webpack..."
+    precompiling_assets: "Précompilation des assets..."
+    pinning_javascript: "Verrouillage des packages JavaScript..."
+    setup_database: "Configuration de la base de données..."
+    copying_application_files: "Copie des fichiers de l'application..."
+    generating_configurations: "Génération des configurations..."
+    running_command: "Exécution de la commande: %{command}"
+    skipping_seeds: "⚠️ Exécution de db:seed ignorée. Pour l'exécuter, définissez run_seeds: true dans le manifeste."
+
+    generating_systemd: "Génération du fichier de service systemd..."
+    generated_systemd: "Fichier systemd généré: %{path}"
+    generating_initd: "Génération du script init.d..."
+    generated_initd: "Script init.d généré: %{path}"
+    generating_launchd: "Génération du plist launchd..."
+    generated_launchd: "Plist launchd généré: %{path}"
+    generating_webserver: "Génération de la configuration %{server}..."
+    generated_webserver: "Configuration %{server} générée: %{path}"
+    generating_ssl: "Génération de la configuration SSL..."
+    generated_ssl: "Configuration SSL générée"
+
+    packagers:
+      deb: "Package Debian"
+      rpm: "Package RPM"
+      brew: "Formule Homebrew"
+      tar: "Archive TAR"

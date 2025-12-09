@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string><%= manifest["app_name"] %>.passenger</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/bin/passenger</string>
+      <string>start</string>
+      <string>-p</string>
+      <string>3000</string>
+      <string>-d</string>
+      <string>--environment</string>
+      <string>production</string>
+      <string>--pid-file</string>
+      <string><%= app_path %>/tmp/pids/passenger.pid</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string><%= app_path %></string>
+    <key>UserName</key>
+    <string><%= app_user %></string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+  </dict>
+</plist>

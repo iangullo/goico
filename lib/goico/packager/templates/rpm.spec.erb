@@ -1,0 +1,14 @@
+Name: <%= name %>
+Version: <%= version %>
+Release: 1%{?dist}
+Summary: Packaged Rails application <%= name %>
+License: MIT
+Group: Applications/System
+BuildArch: noarch
+
+%description
+Packaged Rails application <%= name %>
+
+%files
+%defattr(-,root,root,-)
+/opt/<%= name %>

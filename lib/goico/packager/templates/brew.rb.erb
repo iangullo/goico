@@ -1,0 +1,10 @@
+class <%= name.capitalize.gsub(/[-_]/, "") %> < Formula
+  desc "Packaged Rails app <%= name %>"
+  homepage "https://example.com"
+  url "file:///<%= File.expand_path(@manifest["app_path"]) %>"
+  version "<%= version %>"
+
+  def install
+    prefix.install Dir["*"]
+  end
+end

@@ -1,0 +1,9 @@
+# Direct connection to Rails server (Puma/Passenger)
+<% if ssl_enabled? %>
+# SSL enabled
+ssl_certificate /etc/ssl/certs/<%= domain %>.crt
+ssl_certificate_key /etc/ssl/private/<%= domain %>.key
+<% end %>
+# Rails app root
+app_root <%= app_path %>
+server <%= app_server %>
