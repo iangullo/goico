@@ -32,7 +32,6 @@ module Goico
     autoload :WorkerServiceGenerator, "goico/installer/worker_service_generator"
     autoload :SystemPackages, "goico/installer/system_packages"
     autoload :Webserver, "goico/installer/webserver"
-    autoload :Tls, "goico/installer/tls/certbot"
 
     # Helper: print a user message
     def self.info(key, **args)

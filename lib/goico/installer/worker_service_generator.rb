@@ -22,35 +22,23 @@
 # Generates background worker services for Rails applications
 # Supports systemd, initd, launchd
 #
-require "fileutils"
+require_relative "base_service_generator"
 
 module Goico
   module Installer
-    class WorkerServiceGenerator
-      attr_reader :manifest
-
-      def initialize(manifest)
-        @manifest = manifest
-      end
-
-      def generate_all
-        generate_systemd if supported_systemd?
-        generate_initd if supported_initd?
-        generate_launchd if supported_launchd?
-      end
-
+    class WorkerServiceGenerator < BaseServiceGenerator
       private
 
-      def app_path
-        manifest["app_path"] || "/opt/rails_app"
+      def units
+        units = []
+        if supported_systemd? then units << { system: "systemd", path: "/etc/systemd/system/#{manifest['app_name']}_worker.service" } end
+        if supported_initd? then units << { system: "initd", path: "/etc/init.d/#{manifest['app_name']}_worker", chmod: "755" } end
+        if supported_launchd? then units << { system: "launchd", path: File.expand_path("~/Library/LaunchAgents/#{manifest['app_name']}_worker.plist") } end
+        units
       end
 
-      def app_user
-        manifest.dig("capabilities", "user") || "railsapp"
-      end
-
-      def app_group
-        manifest.dig("capabilities", "group") || app_user
+      def template_filename(system)
+        "#{system}.worker.erb"
       end
 
       def supported_systemd?
@@ -63,38 +51,6 @@ module Goico
 
       def supported_launchd?
         RUBY_PLATFORM.include?("darwin")
-      end
-
-      # --------------------
-      # Templates paths
-      # --------------------
-      def template_path(system)
-        File.join(__dir__, "templates", "#{system}.worker.erb")
-      end
-
-      # --------------------
-      # Generation methods
-      # --------------------
-      def generate_systemd
-        path = "/etc/systemd/system/#{manifest['app_name']}_worker.service"
-        File.write(path, render_template("systemd"))
-      end
-
-      def generate_initd
-        path = "/etc/init.d/#{manifest['app_name']}_worker"
-        File.write(path, render_template("initd"))
-        FileUtils.chmod(0o755, path)
-      end
-
-      def generate_launchd
-        path = File.expand_path("~/Library/LaunchAgents/#{manifest['app_name']}_worker.plist")
-        File.write(path, render_template("launchd"))
-      end
-
-      def render_template(system)
-        template_file = template_path(system)
-        template = File.read(template_file)
-        ERB.new(template).result(binding)
       end
     end
   end

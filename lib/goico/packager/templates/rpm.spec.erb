@@ -1,14 +1,23 @@
-Name: <%= name %>
-Version: <%= version %>
+Name: <%= app_name %>
+Version: <%= app_version %>
 Release: 1%{?dist}
-Summary: Packaged Rails application <%= name %>
-License: MIT
-Group: Applications/System
-BuildArch: noarch
+Summary: <%= app_description %>
+License: <%= app_license %>
+URL: <%= app_homepage %>
+Requires: <%= dependencies.join(", ") %>
 
 %description
-Packaged Rails application <%= name %>
+<%= app_description %>
+
+%prep
+%setup -q
+
+%install
+mkdir -p %{buildroot}/<%= staging_dir %>
+cp -r * %{buildroot}/<%= staging_dir %>
 
 %files
-%defattr(-,root,root,-)
-/opt/<%= name %>
+/<%= staging_dir %>/*
+
+%post
+<%= postinstall_script %>

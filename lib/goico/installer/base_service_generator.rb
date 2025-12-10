@@ -1,4 +1,3 @@
-# Goico - Ruby gem to automate intaller package generation for Rails apps.
 # Copyright (C) 2025  Iván González Angullo
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,98 +17,91 @@
 #
 # frozen_string_literal: true
 
-# lib/installer/webserver_generator.rb
+# lib/goico/installer/base_service_generator.rb
 #
-# Generates webserver configuration for Rails apps
-# - Supports nginx, apache, direct
-# - Adds TLS configuration if requested
-# - Lazy-loads ERB templates from installer/templates
-#
+# Abstraction to generate service scripts for Rails applications
+# - Supports systemd, init.d, launchd
+# - Supports Puma or Passenger
+require "fileutils"
+require "erb"
+
 module Goico
   module Installer
-    class WebserverGenerator
+    class BaseServiceGenerator
       TEMPLATE_PATH = File.expand_path("../templates", __dir__)
 
-      attr_reader :manifest, :platform
+      attr_reader :manifest, :platform, :service_type
 
-      def initialize(manifest:, platform: Installer::Platform.detect)
+      def initialize(manifest, platform: Installer::Platform.detect)
         @manifest = manifest
         @platform = platform
+        @service_type = self.class.name.split("::").last.gsub("Generator", "").downcase.to_sym
       end
 
+      # --------------------
+      # Unified generation
+      # --------------------
+      # @param to_shell [Boolean] if true, returns shell commands instead of writing files
       def generate(to_shell: false)
-        cmds = units.map { |unit| generate_unit(**unit.merge(to_shell: to_shell)) }
+        cmds = []
+
+        units.each do |unit|
+          cmds << generate_unit(**unit.merge(to_shell: to_shell))
+        end
+
         cmds.compact.join("\n")
       end
 
       private
 
+      # --------------------
+      # List of units to generate
+      # Should be defined in subclass as array of hashes:
+      # [{ system: "systemd", path: "/etc/systemd/system/app.service", chmod: "755" }, ...]
+      # --------------------
       def units
-        units = []
-        app_name = manifest["app_name"] || "rails_app"
-        webserver = manifest.dig("capabilities", "webserver") || "nginx"
-
-        case webserver.to_s
-        when "nginx"
-          units << {
-            system: "nginx",
-            path: "/etc/nginx/sites-available/#{app_name}.conf",
-            symlink: "/etc/nginx/sites-enabled/#{app_name}.conf"
-          }
-        when "apache"
-          units << {
-            system: "apache",
-            path: "/etc/apache2/sites-available/#{app_name}.conf",
-            symlink: "/etc/apache2/sites-enabled/#{app_name}.conf"
-          }
-        end
-
-        units
+        raise NotImplementedError, "#{self.class} must define #units"
       end
 
-      def generate_unit(system:, path:, to_shell:, symlink: nil)
+      # --------------------
+      # Unit generation helper
+      # --------------------
+      def generate_unit(system:, path:, to_shell:, chmod: nil)
         content = render_template(system)
 
         if to_shell
           cmd = +"cat > #{path} <<'EOF'\n#{content}\nEOF"
-          cmd << "\nln -sf #{path} #{symlink}" if symlink
+          cmd << "\nchmod #{chmod} #{path}" if chmod
           cmd
         else
           FileUtils.mkdir_p(File.dirname(path))
           File.write(path, content)
-          FileUtils.chmod(0o644, path)
-          FileUtils.ln_sf(path, symlink) if symlink
-          Installer.info("goico.generated_webserver", path: path)
+          FileUtils.chmod(chmod.to_i(8), path) if chmod
+          Installer.info("goico.generated_service", path: path)
           nil
         end
       end
 
+      # --------------------
+      # Render template
+      # --------------------
       def render_template(system)
         template_file = File.join(TEMPLATE_PATH, template_filename(system))
         template = File.read(template_file)
         ERB.new(template, trim_mode: "-").result(binding)
       end
 
+      # --------------------
+      # Map system to template filename
+      # Should be implemented in subclass
+      # --------------------
       def template_filename(system)
-        case system.to_s
-        when "nginx" then "nginx.site.erb"
-        when "apache" then "apache.site.erb"
-        else
-          raise "Unknown webserver template for #{system}"
-        end
+        raise NotImplementedError, "#{self.class} must define #template_filename"
       end
 
       # --------------------
       # Helpers for templates
       # --------------------
-      def domain
-        manifest.dig("capabilities", "domain")
-      end
-
-      def ssl_enabled?
-        manifest.dig("capabilities", "ssl") && domain
-      end
-
       def app_path
         manifest["app_path"] || "/opt/rails_app"
       end

@@ -1,7 +1,10 @@
-Package: <%= name %>
-Version: <%= version %>
+Package: <%= app_name %>
+Version: <%= app_version %>
 Section: web
 Priority: optional
 Architecture: all
-Depends: <%= deps.join(", ") %>
-Description: Packaged Rails application <%= name %>
+Maintainer: <%= maintainer %>
+Depends: <%= dependencies.join(", ") %>
+Description: <%= app_description %>
+Homepage: <%= app_homepage %>
+License: <%= app_license %>

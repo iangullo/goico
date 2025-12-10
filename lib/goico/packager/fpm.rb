@@ -1,46 +1,41 @@
-# lib/goico/packager/fpm/base.rb
-rerequire "fpm/package"
+# lib/goico/packager/base.rb
+#
+# Base class for packaging Rails apps with Goico
+# Responsibilities:
+#  - Manage staging directory
+#  - Pull app metadata from manifest
+#  - Generate postinstall script
+#  - Resolve dependencies via SystemPackages
+#  - Provide helper methods for FPM, Brew, and Tar builders
+#
+require_relative "base"
+require "fpm/package"
 
 module Goico
   module Packager
-    module FPM
-      class Base < Packager::Base
-        def package(target)
-          case target.to_sym
-          when :deb then build_deb
-          when :rpm then build_rpm
-          else
-            raise "Unsupported FPM target: #{target}"
-          end
-        end
+    class FPM < Base
+      def build(target)
+        prepare_dependencies
+        clean_staging
 
-        private
+        pkg_type = target.to_sym
+        FPM::Package.build(
+          source: staging_dir,
+          target: pkg_type,
+          name: app_name,
+          version: app_version,
+          after_install: write_postinstall_script,
+          depends: dependencies.join(",")
+        )
+      end
 
-        def build_deb
-          FPM::Package.build(
-            source: staging_dir,
-            target: "deb",
-            name: manifest['capabilities']['app_name'],
-            version: manifest['capabilities']['version'],
-            after_install: postinstall_script_path,
-            depends: @dependencies.join(",")
-          )
-        end
+      private
 
-        def build_rpm
-          FPM::Package.build(
-            source: staging_dir,
-            target: "rpm",
-            name: manifest['capabilities']['app_name'],
-            version: manifest['capabilities']['version'],
-            after_install: postinstall_script_path,
-            depends: @dependencies.join(",")
-          )
-        end
-
-        def postinstall_script_path
-          File.join(staging_dir, "postinstall.sh")
-        end
+      def write_postinstall_script
+        path = File.join(staging_dir, "postinstall.sh")
+        File.write(path, postinstall_script)
+        FileUtils.chmod(0o755, path)
+        path
       end
     end
   end

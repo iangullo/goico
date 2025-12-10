@@ -24,90 +24,38 @@
 # - Supports Puma or Passenger
 # - Uses templates from lib/goico/installer/templates/
 #
+require_relative "base_service_generator"
+
 module Goico
   module Installer
-    class ServiceGenerator
-      attr_reader :platform, :capabilities, :manifest, :output_path, :service_type
-
-      TEMPLATE_PATH = File.expand_path("../templates", __dir__)
-
-      # @param manifest [Hash] Manifest from Analyzer
-      # @param platform [Installer::Platform] Detected platform object
-      # @param service_type [Symbol] :webapp or :worker
-      # @param output_path [String] Path to write the service script
-      def initialize(manifest:, platform:, service_type: :webapp, output_path: nil)
-        @manifest = manifest
-        @capabilities = manifest["capabilities"] || {}
-        @platform = platform
-        @service_type = service_type
-        @output_path = output_path || default_output_path
-      end
-
-      # --------------------
-      # Public API
-      # --------------------
-      def generate
-        Installer.info("goico.generating_service", service: service_type)
-
-        template = load_template
-        script = ERB.new(template, trim_mode: "-").result(binding)
-
-        File.write(output_path, script)
-        Installer.info("goico.generated_service", path: output_path)
-      end
-
+    class ServiceGenerator < BaseServiceGenerator
       private
 
-      def default_output_path
+      def units
         name = manifest["app_name"] || "rails_app"
-        case capabilities["init_system"].to_s
-        when "systemd" then "/etc/systemd/system/#{name}.service"
-        when "initd" then "/etc/init.d/#{name}"
-        when "launchd" then "/Library/LaunchDaemons/#{name}.plist"
+        init = manifest.dig("capabilities", "init_system") || "systemd"
+
+        case init.to_s
+        when "systemd"
+          [{ system: "systemd", path: "/etc/systemd/system/#{name}.service" }]
+        when "initd"
+          [{ system: "initd", path: "/etc/init.d/#{name}", chmod: "755" }]
+        when "launchd"
+          [{ system: "launchd", path: "/Library/LaunchDaemons/#{name}.plist" }]
         else
-          "./#{name}.service"
+          []
         end
       end
 
-      # Load ERB template based on init system and app server
-      def load_template
-        init_system = capabilities["init_system"] || "systemd"
-        app_server = capabilities["app_server"] || "puma"
-
-        filename = case init_system.to_s
-                   when "systemd"
-                     "systemd.#{app_server}.service.erb"
-                   when "initd"
-                     "initd.#{app_server}.sh.erb"
-                   when "launchd"
-                     "launchd.#{app_server}.plist.erb"
-                   else
-                     raise ArgumentError,
-                           Goico::Core::I18nHelper.t("goico.errors.invalid_init_system",
-                                                     system: init_system,
-                                                     valid: "systemd, initd, launchd")
-                   end
-
-        path = File.join(TEMPLATE_PATH, filename)
-        unless File.exist?(path)
-          raise IOError,
-                Goico::Core::I18nHelper.t("goico.errors.missing_template", path: path)
+      def template_filename(system)
+        app_server = manifest.dig("capabilities", "app_server") || "puma"
+        case system.to_s
+        when "systemd" then "systemd.#{app_server}.service.erb"
+        when "initd" then "initd.#{app_server}.sh.erb"
+        when "launchd" then "launchd.#{app_server}.plist.erb"
+        else
+          raise "Unknown system #{system}"
         end
-
-        File.read(path)
-      end
-
-      # Helper methods for ERB template
-      def user
-        capabilities["user"] || "railsapp"
-      end
-
-      def app_path
-        manifest["app_path"] || "/opt/rails_app"
-      end
-
-      def ruby_bin
-        capabilities["rbenv"] ? "/usr/bin/env ruby" : "/usr/bin/ruby"
       end
     end
   end

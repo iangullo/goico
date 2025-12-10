@@ -1,17 +1,19 @@
 # lib/goico/packager/brew.rb
-require "erb"
+require_relative "base"
 
 module Goico
   module Packager
     class Brew < Base
-      private
+      def build
+        prepare_dependencies
+        clean_staging
+        formula_path = File.join(staging_dir, "#{app_name}.rb")
 
-      def package(_target)
-        formula_path = File.join(staging_dir, "#{manifest['capabilities']['app_name']}.rb")
-        template = File.read(File.join(__dir__, "templates", "brew.rb.erb"))
-        renderer = ERB.new(template)
-        File.write(formula_path, renderer.result(binding))
-        puts "Homebrew formula generated: #{formula_path}"
+        template = File.read(File.expand_path("templates/brew.rb.erb", __dir__))
+        content  = ERB.new(template).result(binding)
+
+        File.write(formula_path, content)
+        puts "Brew formula generated at #{formula_path}"
       end
     end
   end

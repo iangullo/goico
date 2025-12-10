@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "goico"
+
+begin
+  Goico.start(ARGV)
+rescue Interrupt
+  puts Goico::Core::I18n.t("cli.interrupted")
+  exit 1
+rescue StandardError => e
+  puts Goico::Core::I18n.t("cli.unexpected_error")
+  puts "#{e.class}: #{e.message}"
+  puts Goico::Core::I18n.t("cli.backtrace") if ENV["GOICO_DEBUG"]
+  puts e.backtrace.join("\n") if ENV["GOICO_DEBUG"]
+  exit 1
+end

@@ -19,56 +19,68 @@
 
 # lib/goico/packager/base.rb
 #
-# Base module for package generators
-# - Lazy loads subcomponents
-# - Provides helper methods
-# - Integrates I18n.t for user-facing messages
+# Base class for packaging Rails apps with Goico
+# Responsibilities:
+#  - Manage staging directory
+#  - Pull app metadata from manifest
+#  - Generate postinstall script
+#  - Resolve dependencies via SystemPackages
+#  - Provide helper methods for FPM, Brew, and Tar builders
 #
 module Goico
   module Packager
     class Base
-      attr_reader :manifest, :staging_dir
+      attr_reader :manifest, :staging_dir, :dependencies
 
       def initialize(manifest)
         @manifest = manifest
-        @staging_dir = "/tmp/goico_build_#{Time.now.to_i}"
+        @staging_dir = "/tmp/#{manifest['capabilities']['app_name']}_pkg"
+        @dependencies = []
       end
 
-      # Entry point for all builders
-      def build(target)
-        prepare_staging
-        copy_app_files
-        generate_postinstall
-        resolve_dependencies
-        package(target)
-      ensure
-        cleanup
+      def prepare_dependencies
+        require_relative "../installer/system_packages"
+        @dependencies = Installer::SystemPackages.resolve(manifest["capabilities"])
+      end
+
+      def postinstall_script
+        require_relative "../installer/postinstall_generator"
+        PostinstallGenerator.new(manifest).render_script
+      end
+
+      def clean_staging
+        FileUtils.rm_rf(staging_dir)
+        FileUtils.mkdir_p(staging_dir)
       end
 
       private
 
-      def prepare_staging
-        FileUtils.mkdir_p(staging_dir)
+      def capabilities
+        manifest["capabilities"] || {}
       end
 
-      def copy_app_files
-        FileUtils.cp_r("#{manifest['app_path']}/.", staging_dir)
+      def app_name
+        capabilities["app_name"]
       end
 
-      def generate_postinstall
-        Goico::Installer::PostinstallGenerator.new(manifest).run
+      def app_version
+        capabilities["version"]
       end
 
-      def resolve_dependencies
-        @dependencies = Goico::Installer::SystemPackages.new(manifest['capabilities']).all
+      def app_description
+        capabilities["description"] || ""
       end
 
-      def package(target)
-        raise NotImplementedError, "Package method must be implemented in subclass"
+      def app_homepage
+        capabilities["homepage"] || ""
       end
 
-      def cleanup
-        FileUtils.rm_rf(staging_dir)
+      def app_license
+        capabilities["license"] || "MIT"
+      end
+
+      def maintainer
+        capabilities["maintainer"] || "Unknown <unknown@example.com>"
       end
     end
   end
